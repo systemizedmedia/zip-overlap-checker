@@ -99,172 +99,67 @@
     .matrix-table th {
       background-color: #f3f4f6;
     }
+    .matrix-table td.heat-0 { background-color: #ffffff; }
+    .matrix-table td.heat-1 { background-color: #e0f2f1; }
+    .matrix-table td.heat-2 { background-color: #b2dfdb; }
+    .matrix-table td.heat-3 { background-color: #80cbc4; }
+    .matrix-table td.heat-4 { background-color: #4db6ac; }
+    .matrix-table td.heat-5 { background-color: #26a69a; color: white; }
+    .external-link-button {
+      display: block;
+      width: fit-content;
+      margin: 20px auto;
+      background-color: #10b981;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+    }
+    .external-link-button:hover {
+      background-color: #059669;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">
-      <img src="logo.png" alt="Systemized Media Logo" />
-    </div>
-    <h1>ZIP Code Overlap Checker</h1>
-    <p>Upload or paste ZIPs for up to 5 clients. This tool shows overlaps and % of shared ZIPs between clients.</p>
+<!-- The rest of your HTML remains the same -->
+<script>
+// Replace the content of calculateOverlapMatrix function with this:
+function calculateOverlapMatrix() {
+  const table = document.getElementById('overlapMatrixTable');
+  table.innerHTML = '';
+  const header = document.createElement('tr');
+  header.innerHTML = '<th></th>' + clientZips.map((_, i) => `<th>Client ${i + 1}</th>`).join('');
+  table.appendChild(header);
 
-    <div>
-      <label>Client 1:</label><input type="file" id="file1" accept=".csv"><textarea id="text1" placeholder="Paste ZIPs here..."></textarea>
-      <label>Client 2:</label><input type="file" id="file2" accept=".csv"><textarea id="text2" placeholder="Paste ZIPs here..."></textarea>
-      <label>Client 3:</label><input type="file" id="file3" accept=".csv"><textarea id="text3" placeholder="Paste ZIPs here..."></textarea>
-      <label>Client 4:</label><input type="file" id="file4" accept=".csv"><textarea id="text4" placeholder="Paste ZIPs here..."></textarea>
-      <label>Client 5:</label><input type="file" id="file5" accept=".csv"><textarea id="text5" placeholder="Paste ZIPs here..."></textarea>
-    </div>
+  for (let i = 0; i < clientZips.length; i++) {
+    const row = document.createElement('tr');
+    row.innerHTML = `<th>Client ${i + 1}</th>`;
+    for (let j = 0; j < clientZips.length; j++) {
+      if (i === j) {
+        row.innerHTML += `<td>-</td>`;
+      } else {
+        const overlapZips = clientZips[i].filter(zip => clientZips[j].includes(zip));
+        const count = overlapZips.length;
+        const percent = totalZips[i] > 0 ? ((count / totalZips[i]) * 100) : 0;
+        const percentText = percent.toFixed(1);
 
-    <button onclick="handleInputs()">Check Overlap</button>
-    <div class="filters">
-      <label for="overlapFilter">Show ZIPs used by at least:</label>
-      <select id="overlapFilter" onchange="filterTable()">
-        <option value="1">All ZIPs</option>
-        <option value="2">2+ clients</option>
-        <option value="3">3+ clients</option>
-        <option value="4">4+ clients</option>
-        <option value="5">All 5 clients</option>
-      </select>
-      <button onclick="downloadCSV()">Export Results as CSV</button>
-    </div>
+        let heatClass = 'heat-0';
+        if (percent >= 1 && percent < 10) heatClass = 'heat-1';
+        else if (percent >= 10 && percent < 25) heatClass = 'heat-2';
+        else if (percent >= 25 && percent < 50) heatClass = 'heat-3';
+        else if (percent >= 50 && percent < 75) heatClass = 'heat-4';
+        else if (percent >= 75) heatClass = 'heat-5';
 
-    <table id="resultTable" style="display:none">
-      <thead>
-        <tr>
-          <th>ZIP Code</th>
-          <th># of Clients</th>
-          <th>Clients</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div class="summary">
-      <h3>Client Overlap Summary (%)</h3>
-      <table class="matrix-table" id="overlapMatrixTable"></table>
-    </div>
-  </div>
-
-  <script>
-    const fileInputs = ["file1", "file2", "file3", "file4", "file5"];
-    const textInputs = ["text1", "text2", "text3", "text4", "text5"];
-    const clientZips = [];
-    const totalZips = [];
-
-    function handleInputs() {
-      clientZips.length = 0;
-      totalZips.length = 0;
-
-      const promises = fileInputs.map((fileId, index) => {
-        const file = document.getElementById(fileId).files[0];
-        const textareaValue = document.getElementById(textInputs[index]).value;
-
-        if (file) {
-          return file.text().then(text => parseZips(text));
-        } else if (textareaValue.trim() !== '') {
-          return Promise.resolve(parseZips(textareaValue));
-        } else {
-          return Promise.resolve([]);
-        }
-      });
-
-      Promise.all(promises).then(results => {
-        results.forEach((zips, i) => {
-          const uniqueZips = [...new Set(zips.map(zip => zip.trim()).filter(zip => zip))];
-          clientZips[i] = uniqueZips;
-          totalZips[i] = uniqueZips.length;
-        });
-        checkOverlap();
-        calculateOverlapMatrix();
-      });
-    }
-
-    function parseZips(input) {
-      return input.split(/[\s,\n]+/).map(zip => zip.trim()).filter(zip => zip);
-    }
-
-    function checkOverlap() {
-      const zipMap = {};
-
-      clientZips.forEach((zips, idx) => {
-        const clientName = `Client ${idx + 1}`;
-        zips.forEach(zip => {
-          if (!zipMap[zip]) {
-            zipMap[zip] = { count: 0, clients: [] };
-          }
-          if (!zipMap[zip].clients.includes(clientName)) {
-            zipMap[zip].count++;
-            zipMap[zip].clients.push(clientName);
-          }
-        });
-      });
-
-      const tbody = document.querySelector('#resultTable tbody');
-      tbody.innerHTML = '';
-
-      Object.entries(zipMap).sort().forEach(([zip, data]) => {
-        const row = document.createElement('tr');
-        row.setAttribute('data-count', data.count);
-        if (data.count >= 2) row.classList.add('highlight');
-        row.innerHTML = `<td>${zip}</td><td>${data.count}</td><td>${data.clients.join(', ')}</td>`;
-        tbody.appendChild(row);
-      });
-
-      document.getElementById('resultTable').style.display = 'table';
-      filterTable();
-    }
-
-    function filterTable() {
-      const minClients = parseInt(document.getElementById('overlapFilter').value);
-      const rows = document.querySelectorAll('#resultTable tbody tr');
-      rows.forEach(row => {
-        const count = parseInt(row.getAttribute('data-count'));
-        row.style.display = count >= minClients ? '' : 'none';
-      });
-    }
-
-    function calculateOverlapMatrix() {
-      const table = document.getElementById('overlapMatrixTable');
-      table.innerHTML = '';
-      const header = document.createElement('tr');
-      header.innerHTML = '<th></th>' + clientZips.map((_, i) => `<th>Client ${i + 1}</th>`).join('');
-      table.appendChild(header);
-
-      for (let i = 0; i < clientZips.length; i++) {
-        const row = document.createElement('tr');
-        row.innerHTML = `<th>Client ${i + 1}</th>`;
-
-        for (let j = 0; j < clientZips.length; j++) {
-          if (i === j) {
-            row.innerHTML += `<td>-</td>`;
-          } else {
-            const overlap = clientZips[i].filter(zip => clientZips[j].includes(zip)).length;
-            const percent = totalZips[i] > 0 ? ((overlap / totalZips[i]) * 100).toFixed(1) : "0.0";
-            row.innerHTML += `<td>${percent}%</td>`;
-          }
-        }
-        table.appendChild(row);
+        row.innerHTML += `<td class="${heatClass}">${count} ZIPs<br><small>${percentText}%</small></td>`;
       }
     }
-
-    function downloadCSV() {
-      const rows = Array.from(document.querySelectorAll('#resultTable tbody tr'));
-      const headers = ["ZIP Code", "# of Clients", "Clients"];
-      const csv = [headers.join(",")].concat(
-        rows.filter(row => row.style.display !== 'none').map(row =>
-          Array.from(row.children).map(cell => `"${cell.textContent}"`).join(",")
-        )
-      ).join("\n");
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'zip_overlap_results.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-  </script>
+    table.appendChild(row);
+  }
+}
+</script>
 </body>
 </html>
