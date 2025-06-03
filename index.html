@@ -72,7 +72,7 @@
       background-color: #f3f4f6;
     }
     .highlight {
-      background-color: #fef3c7;
+      background-color: #fff7d6 !important;
     }
     .filters {
       margin-top: 10px;
@@ -97,7 +97,7 @@
 
     <button onclick="handleInputs()">Check Overlap</button>
     <div class="filters">
-      <label><input type="checkbox" id="filterToggle" onchange="filterTable()"> Show only overlapping ZIPs (2+ clients)</label>
+      <label><input type="checkbox" id="filterToggle"> Show only overlapping ZIPs (2+ clients)</label>
       <button onclick="downloadCSV()">Export Results as CSV</button>
     </div>
 
@@ -173,7 +173,8 @@
 
       Object.entries(zipMap).sort().forEach(([zip, data]) => {
         const row = document.createElement('tr');
-        if (data.count > 1) row.classList.add('highlight');
+        row.classList.add(data.count > 1 ? 'highlight' : '');
+        row.dataset.count = data.count;
         row.innerHTML = `<td>${zip}</td><td>${data.count}</td><td>${data.percentages.join(', ')}</td>`;
         tbody.appendChild(row);
       });
@@ -186,8 +187,8 @@
       const filter = document.getElementById('filterToggle').checked;
       const rows = document.querySelectorAll('#resultTable tbody tr');
       rows.forEach(row => {
-        const count = parseInt(row.children[1].textContent);
-        row.style.display = filter && count < 2 ? 'none' : '';
+        const count = parseInt(row.dataset.count);
+        row.style.display = !filter || count >= 2 ? '' : 'none';
       });
     }
 
@@ -195,7 +196,9 @@
       const rows = Array.from(document.querySelectorAll('#resultTable tbody tr'));
       const headers = ["ZIP Code", "# of Clients", "Clients with % of Total ZIPs"];
       const csv = [headers.join(",")].concat(
-        rows.map(row => Array.from(row.children).map(cell => `"${cell.textContent}"`).join(","))
+        rows.filter(row => row.style.display !== 'none').map(row =>
+          Array.from(row.children).map(cell => `"${cell.textContent}"`).join(",")
+        )
       ).join("\n");
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
