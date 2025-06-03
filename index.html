@@ -173,9 +173,9 @@
 
       Object.entries(zipMap).sort().forEach(([zip, data]) => {
         const row = document.createElement('tr');
-        row.classList.toggle('highlight', data.count >= 2);
         row.dataset.count = data.count;
         row.innerHTML = `<td>${zip}</td><td>${data.count}</td><td>${data.percentages.join(', ')}</td>`;
+        if (data.count >= 2) row.classList.add('highlight');
         tbody.appendChild(row);
       });
 
@@ -188,7 +188,7 @@
       const rows = document.querySelectorAll('#resultTable tbody tr');
       rows.forEach(row => {
         const count = parseInt(row.dataset.count);
-        row.style.display = filter ? (count >= 2 ? '' : 'none') : '';
+        row.style.display = filter && count < 2 ? 'none' : '';
       });
     }
 
