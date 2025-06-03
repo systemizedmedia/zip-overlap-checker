@@ -125,7 +125,51 @@
   </style>
 </head>
 <body>
-  
+  <div class="container">
+    <div class="logo">
+      <img src="logo.png" alt="Systemized Media Logo" />
+    </div>
+    <h1>ZIP Code Overlap Checker</h1>
+    <p>Upload or paste ZIPs for up to 5 clients. This tool shows overlaps and % of shared ZIPs between clients.</p>
+
+    <div>
+      <label>Client 1:</label><input type="file" id="file1" accept=".csv"><textarea id="text1" placeholder="Paste ZIPs here..."></textarea>
+      <label>Client 2:</label><input type="file" id="file2" accept=".csv"><textarea id="text2" placeholder="Paste ZIPs here..."></textarea>
+      <label>Client 3:</label><input type="file" id="file3" accept=".csv"><textarea id="text3" placeholder="Paste ZIPs here..."></textarea>
+      <label>Client 4:</label><input type="file" id="file4" accept=".csv"><textarea id="text4" placeholder="Paste ZIPs here..."></textarea>
+      <label>Client 5:</label><input type="file" id="file5" accept=".csv"><textarea id="text5" placeholder="Paste ZIPs here..."></textarea>
+    </div>
+
+    <button onclick="handleInputs()">Check Overlap</button>
+    <div class="filters">
+      <label for="overlapFilter">Show ZIPs used by at least:</label>
+      <select id="overlapFilter" onchange="filterTable()">
+        <option value="1">All ZIPs</option>
+        <option value="2">2+ clients</option>
+        <option value="3">3+ clients</option>
+        <option value="4">4+ clients</option>
+        <option value="5">All 5 clients</option>
+      </select>
+      <button onclick="downloadCSV()">Export Results as CSV</button>
+    </div>
+
+    <table id="resultTable" style="display:none">
+      <thead>
+        <tr>
+          <th>ZIP Code</th>
+          <th># of Clients</th>
+          <th>Clients</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="summary">
+      <h3>Client Overlap Summary (%)</h3>
+      <table class="matrix-table" id="overlapMatrixTable"></table>
+      <button onclick="downloadMatrixCSV()">Download Matrix as CSV</button>
+    </div>
+  </div>
 <!-- The rest of your HTML remains the same -->
 <script>
 // Replace the content of calculateOverlapMatrix function with this:
