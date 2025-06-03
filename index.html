@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZIP Code Overlap Checker</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    textarea, input[type="file"] { width: 100%; margin-bottom: 10px; }
+    textarea { height: 80px; }
+    button { padding: 10px 20px; font-size: 16px; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f4f4f4; }
+    .highlight { background-color: #ffeeba; }
+  </style>
+</head>
+<body>
+  <h1>ZIP Code Overlap Checker</h1>
+
+  <p>Upload or paste ZIPs for up to 5 clients (one ZIP per line or comma-separated):</p>
+  <div>
+    <label>Client 1:</label>
+    <input type="file" id="file1" accept=".csv">
+    <textarea id="text1" placeholder="Paste ZIPs here..."></textarea>
+
+    <label>Client 2:</label>
+    <input type="file" id="file2" accept=".csv">
+    <textarea id="text2" placeholder="Paste ZIPs here..."></textarea>
+
+    <label>Client 3:</label>
+    <input type="file" id="file3" accept=".csv">
+    <textarea id="text3" placeholder="Paste ZIPs here..."></textarea>
+
+    <label>Client 4:</label>
+    <input type="file" id="file4" accept=".csv">
+    <textarea id="text4" placeholder="Paste ZIPs here..."></textarea>
+
+    <label>Client 5:</label>
+    <input type="file" id="file5" accept=".csv">
+    <textarea id="text5" placeholder="Paste ZIPs here..."></textarea>
+  </div>
+
+  <button onclick="handleInputs()">Check Overlap</button>
+  <label style="margin-left: 20px;"><input type="checkbox" id="filterToggle" onchange="filterTable()"> Show only overlapping ZIPs (2+ clients)</label>
+  <button onclick="downloadCSV()">Export Results as CSV</button>
+
+  <table id="resultTable" style="display:none">
+    <thead>
+      <tr>
+        <th>ZIP Code</th>
+        <th># of Clients</th>
+        <th>Clients</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const fileInputs = ["file1", "file2", "file3", "file4", "file5"];
+    const textInputs = ["text1", "text2", "text3", "text4", "text5"];
+    const clientZips = [];
+
+    function handleInputs() {
+      clientZips.length = 0;
+
+      const promises = fileInputs.map((fileId, index) => {
+        const file = document.getElementById(fileId).files[0];
+        const textareaValue = document.getElementById(textInputs[index]).value;
+
+        if (file) {
+          return file.text().then(text => parseZips(text));
+        } else if (textareaValue.trim() !== '') {
+          return Promise.resolve(parseZips(textareaValue));
+        } else {
+          return Promise.resolve([]);
+        }
+      });
+
+      Promise.all(promises).then(results => {
+        results.forEach((zips, i) => clientZips[i] = zips);
+        checkOverlap();
+      });
+    }
+
+    function parseZips(input) {
+      return input.split(/[\s,\n]+/).map(zip => zip.trim()).filter(zip => zip);
+    }
+
+    function checkOverlap() {
+      const zipMap = {};
+
+      clientZips.forEach((zips, idx) => {
+        const clientName = `Client ${idx + 1}`;
+        zips.forEach(zip => {
+          if (!zipMap[zip]) {
+            zipMap[zip] = { count: 0, clients: [] };
+          }
+          if (!zipMap[zip].clients.includes(clientName)) {
+            zipMap[zip].count++;
+            zipMap[zip].clients.push(clientName);
+          }
+        });
+      });
+
+      const tbody = document.querySelector('#resultTable tbody');
+      tbody.innerHTML = '';
+
+      Object.entries(zipMap).sort().forEach(([zip, data]) => {
+        const row = document.createElement('tr');
+        if (data.count > 1) row.classList.add('highlight');
+        row.innerHTML = `<td>${zip}</td><td>${data.count}</td><td>${data.clients.join(', ')}</td>`;
+        tbody.appendChild(row);
+      });
+
+      document.getElementById('resultTable').style.display = 'table';
+      filterTable();
+    }
+
+    function filterTable() {
+      const filter = document.getElementById('filterToggle').checked;
+      const rows = document.querySelectorAll('#resultTable tbody tr');
+      rows.forEach(row => {
+        const count = parseInt(row.children[1].textContent);
+        row.style.display = filter && count < 2 ? 'none' : '';
+      });
+    }
+
+    function downloadCSV() {
+      const rows = Array.from(document.querySelectorAll('#resultTable tr'));
+      const csv = rows.map(row => Array.from(row.children).map(cell => cell.textContent).join(",")).join("\n");
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'zip_overlap_results.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
