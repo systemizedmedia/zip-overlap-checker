@@ -83,6 +83,9 @@
     .filters {
       margin-top: 10px;
     }
+    .summary {
+      margin-top: 30px;
+    }
   </style>
 </head>
 <body>
@@ -91,7 +94,7 @@
       <img src="logo.png" alt="Systemized Media Logo" />
     </div>
     <h1>ZIP Code Overlap Checker</h1>
-    <p>Upload or paste ZIPs for up to 5 clients. This tool shows overlaps and exposure %.</p>
+    <p>Upload or paste ZIPs for up to 5 clients. This tool shows overlaps and % of shared ZIPs between clients.</p>
 
     <div>
       <label>Client 1:</label><input type="file" id="file1" accept=".csv"><textarea id="text1" placeholder="Paste ZIPs here..."></textarea>
@@ -119,11 +122,16 @@
         <tr>
           <th>ZIP Code</th>
           <th># of Clients</th>
-          <th>Clients with % of Total ZIPs</th>
+          <th>Clients</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
+
+    <div class="summary">
+      <h3>Client Overlap Summary (%)</h3>
+      <pre id="overlapMatrix"></pre>
+    </div>
   </div>
 
   <script>
@@ -156,6 +164,7 @@
           totalZips[i] = uniqueZips.length;
         });
         checkOverlap();
+        calculateOverlapMatrix();
       });
     }
 
@@ -170,13 +179,11 @@
         const clientName = `Client ${idx + 1}`;
         zips.forEach(zip => {
           if (!zipMap[zip]) {
-            zipMap[zip] = { count: 0, clients: [], percentages: [] };
+            zipMap[zip] = { count: 0, clients: [] };
           }
           if (!zipMap[zip].clients.includes(clientName)) {
             zipMap[zip].count++;
             zipMap[zip].clients.push(clientName);
-            const percentage = ((1 / totalZips[idx]) * 100).toFixed(1);
-            zipMap[zip].percentages.push(`${clientName} (${percentage}%)`);
           }
         });
       });
@@ -188,7 +195,7 @@
         const row = document.createElement('tr');
         row.setAttribute('data-count', data.count);
         if (data.count >= 2) row.classList.add('highlight');
-        row.innerHTML = `<td>${zip}</td><td>${data.count}</td><td>${data.percentages.join(', ')}</td>`;
+        row.innerHTML = `<td>${zip}</td><td>${data.count}</td><td>${data.clients.join(', ')}</td>`;
         tbody.appendChild(row);
       });
 
@@ -205,9 +212,32 @@
       });
     }
 
+    function calculateOverlapMatrix() {
+      const matrix = [];
+      for (let i = 0; i < clientZips.length; i++) {
+        const row = [];
+        for (let j = 0; j < clientZips.length; j++) {
+          if (i === j) {
+            row.push("-");
+          } else {
+            const overlap = clientZips[i].filter(zip => clientZips[j].includes(zip)).length;
+            const percent = totalZips[i] > 0 ? ((overlap / totalZips[i]) * 100).toFixed(1) : "0.0";
+            row.push(`${percent}%`);
+          }
+        }
+        matrix.push(row);
+      }
+
+      let display = '      ' + clientZips.map((_, i) => `C${i + 1}`).join('     ') + '\n';
+      matrix.forEach((row, i) => {
+        display += `C${i + 1}  ` + row.map(val => val.padStart(6)).join('') + '\n';
+      });
+      document.getElementById('overlapMatrix').textContent = display;
+    }
+
     function downloadCSV() {
       const rows = Array.from(document.querySelectorAll('#resultTable tbody tr'));
-      const headers = ["ZIP Code", "# of Clients", "Clients with % of Total ZIPs"];
+      const headers = ["ZIP Code", "# of Clients", "Clients"];
       const csv = [headers.join(",")].concat(
         rows.filter(row => row.style.display !== 'none').map(row =>
           Array.from(row.children).map(cell => `"${cell.textContent}"`).join(",")
