@@ -86,6 +86,19 @@
     .summary {
       margin-top: 30px;
     }
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .matrix-table th, .matrix-table td {
+      border: 1px solid #d1d5db;
+      padding: 8px;
+      text-align: center;
+    }
+    .matrix-table th {
+      background-color: #f3f4f6;
+    }
   </style>
 </head>
 <body>
@@ -130,7 +143,7 @@
 
     <div class="summary">
       <h3>Client Overlap Summary (%)</h3>
-      <pre id="overlapMatrix"></pre>
+      <table class="matrix-table" id="overlapMatrixTable"></table>
     </div>
   </div>
 
@@ -213,26 +226,27 @@
     }
 
     function calculateOverlapMatrix() {
-      const matrix = [];
+      const table = document.getElementById('overlapMatrixTable');
+      table.innerHTML = '';
+      const header = document.createElement('tr');
+      header.innerHTML = '<th></th>' + clientZips.map((_, i) => `<th>Client ${i + 1}</th>`).join('');
+      table.appendChild(header);
+
       for (let i = 0; i < clientZips.length; i++) {
-        const row = [];
+        const row = document.createElement('tr');
+        row.innerHTML = `<th>Client ${i + 1}</th>`;
+
         for (let j = 0; j < clientZips.length; j++) {
           if (i === j) {
-            row.push("-");
+            row.innerHTML += `<td>-</td>`;
           } else {
             const overlap = clientZips[i].filter(zip => clientZips[j].includes(zip)).length;
             const percent = totalZips[i] > 0 ? ((overlap / totalZips[i]) * 100).toFixed(1) : "0.0";
-            row.push(`${percent}%`);
+            row.innerHTML += `<td>${percent}%</td>`;
           }
         }
-        matrix.push(row);
+        table.appendChild(row);
       }
-
-      let display = '      ' + clientZips.map((_, i) => `C${i + 1}`).join('     ') + '\n';
-      matrix.forEach((row, i) => {
-        display += `C${i + 1}  ` + row.map(val => val.padStart(6)).join('') + '\n';
-      });
-      document.getElementById('overlapMatrix').textContent = display;
     }
 
     function downloadCSV() {
