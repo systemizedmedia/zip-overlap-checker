@@ -50,7 +50,7 @@
       <tr>
         <th>ZIP Code</th>
         <th># of Clients</th>
-        <th>Clients</th>
+        <th>Clients with % of Total</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -60,9 +60,11 @@
     const fileInputs = ["file1", "file2", "file3", "file4", "file5"];
     const textInputs = ["text1", "text2", "text3", "text4", "text5"];
     const clientZips = [];
+    const totalZips = [];
 
     function handleInputs() {
       clientZips.length = 0;
+      totalZips.length = 0;
 
       const promises = fileInputs.map((fileId, index) => {
         const file = document.getElementById(fileId).files[0];
@@ -78,7 +80,10 @@
       });
 
       Promise.all(promises).then(results => {
-        results.forEach((zips, i) => clientZips[i] = zips);
+        results.forEach((zips, i) => {
+          clientZips[i] = zips;
+          totalZips[i] = zips.length;
+        });
         checkOverlap();
       });
     }
@@ -94,11 +99,13 @@
         const clientName = `Client ${idx + 1}`;
         zips.forEach(zip => {
           if (!zipMap[zip]) {
-            zipMap[zip] = { count: 0, clients: [] };
+            zipMap[zip] = { count: 0, clients: [], percentages: [] };
           }
           if (!zipMap[zip].clients.includes(clientName)) {
             zipMap[zip].count++;
             zipMap[zip].clients.push(clientName);
+            const percentage = ((1 / totalZips[idx]) * 100).toFixed(1);
+            zipMap[zip].percentages.push(`${clientName} (${percentage}%)`);
           }
         });
       });
@@ -109,7 +116,7 @@
       Object.entries(zipMap).sort().forEach(([zip, data]) => {
         const row = document.createElement('tr');
         if (data.count > 1) row.classList.add('highlight');
-        row.innerHTML = `<td>${zip}</td><td>${data.count}</td><td>${data.clients.join(', ')}</td>`;
+        row.innerHTML = `<td>${zip}</td><td>${data.count}</td><td>${data.percentages.join(', ')}</td>`;
         tbody.appendChild(row);
       });
 
