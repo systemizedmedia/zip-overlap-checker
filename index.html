@@ -106,7 +106,7 @@
         <tr>
           <th>ZIP Code</th>
           <th># of Clients</th>
-          <th>Clients with % of Total</th>
+          <th>Clients with % of Total ZIPs</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -138,8 +138,9 @@
 
       Promise.all(promises).then(results => {
         results.forEach((zips, i) => {
-          clientZips[i] = zips;
-          totalZips[i] = zips.length;
+          const uniqueZips = [...new Set(zips.map(zip => zip.trim()).filter(zip => zip))];
+          clientZips[i] = uniqueZips;
+          totalZips[i] = uniqueZips.length;
         });
         checkOverlap();
       });
@@ -191,8 +192,11 @@
     }
 
     function downloadCSV() {
-      const rows = Array.from(document.querySelectorAll('#resultTable tr'));
-      const csv = rows.map(row => Array.from(row.children).map(cell => cell.textContent).join(",")).join("\\n");
+      const rows = Array.from(document.querySelectorAll('#resultTable tbody tr'));
+      const headers = ["ZIP Code", "# of Clients", "Clients with % of Total ZIPs"];
+      const csv = [headers.join(",")].concat(
+        rows.map(row => Array.from(row.children).map(cell => `"${cell.textContent}"`).join(","))
+      ).join("\n");
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
