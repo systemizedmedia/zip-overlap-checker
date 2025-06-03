@@ -54,6 +54,12 @@
     button:hover {
       background-color: #2563eb;
     }
+    select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 16px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -97,7 +103,14 @@
 
     <button onclick="handleInputs()">Check Overlap</button>
     <div class="filters">
-      <label><input type="checkbox" id="filterToggle" onchange="filterTable()"> Show only overlapping ZIPs (2+ clients)</label>
+      <label for="overlapFilter">Show ZIPs used by at least:</label>
+      <select id="overlapFilter" onchange="filterTable()">
+        <option value="1">All ZIPs</option>
+        <option value="2">2+ clients</option>
+        <option value="3">3+ clients</option>
+        <option value="4">4+ clients</option>
+        <option value="5">All 5 clients</option>
+      </select>
       <button onclick="downloadCSV()">Export Results as CSV</button>
     </div>
 
@@ -184,15 +197,11 @@
     }
 
     function filterTable() {
-      const filter = document.getElementById('filterToggle').checked;
+      const minClients = parseInt(document.getElementById('overlapFilter').value);
       const rows = document.querySelectorAll('#resultTable tbody tr');
       rows.forEach(row => {
         const count = parseInt(row.getAttribute('data-count'));
-        if (filter && count < 2) {
-          row.style.display = 'none';
-        } else {
-          row.style.display = '';
-        }
+        row.style.display = count >= minClients ? '' : 'none';
       });
     }
 
